@@ -16,7 +16,7 @@ const Navbar = () => {
           <li><Link href="/social" className="hover:text-gray-300">Social Network</Link></li>
           <li><Link href="/builds" className="hover:text-gray-300">View Builds</Link></li>
           <li><Link href="/events" className="hover:text-gray-300">Events</Link></li>
-          <li><Link href="/garage/my" className="hover:text-gray-300">Garage</Link></li>
+          <li><Link href="/garage" className="hover:text-gray-300">Garage</Link></li>
         </ul>
       </div>
       <div className="flex-none">
