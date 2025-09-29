@@ -1,8 +1,8 @@
 import Image from "next/image";
-import Navbar from "../src/landing/navbar";
-import Hero from "../src/landing/hero";
-import About from "../src/landing/about";
-import Contact from "../src/landing/contact";
+import Navbar from "./landing/navbar";
+import Hero from "./landing/hero";
+import About from "./landing/about";
+import Contact from "./landing/contact";
 
 export default function Home() {
   return (

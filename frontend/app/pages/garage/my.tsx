@@ -1,8 +1,8 @@
 'use client';
 
-import { GarageHeader } from '@/garage/components/GarageHeader';
-import { CarGrid } from '@/garage/components/CarGrid';
-import { AddCarModal } from '@/garage/components/AddCarModal';
+import { GarageHeader } from '../../../app/garage/components/GarageHeader';
+import { CarGrid } from '../../../app/garage/components/CarGrid';
+import { AddCarModal } from '../../../app/garage/components/AddCarModal';
 
 export default function MyGaragePage() {
   // skeleton: no real data yet
