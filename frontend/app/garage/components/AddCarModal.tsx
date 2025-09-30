@@ -1,118 +1,159 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabaseClient";
 
-export function AddCarModal({ userId }: { userId: string }) {
-  const [open, setOpen] = useState(false);
-  const [year, setYear] = useState("");
-  const [make, setMake] = useState("");
-  const [model, setModel] = useState("");
-  const [trim, setTrim] = useState("");
-  const [coverUrl, setCoverUrl] = useState("");
-  const [loading, setLoading] = useState(false);
+import { GarageHeader } from "../components/GarageHeader";
+import { CarGrid } from "../components/CarGrid";
+import AddCarModal from "../components/AddCarModal";
+import { SpecCard } from "../components/SpecCard";
+import { MaintenanceHub } from "../components/MaintenanceHub";
+import { MaintenanceWidget } from "../components/MaintenanceWidget";
+import { PartsTable } from "../components/PartsTable";
+import { TaskBoard } from "../components/TaskBoard";
+import { BudgetBar } from "../components/BudgetBar";
+import { BuildTimeline } from "../components/BuildTimeline";
+import ActivityFeed from "../components/ActivityFeed";
+import { PhotoCarousel } from "../components/PhotoCarousel";
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+type MaintenanceLog = {
+  id: string;
+  car_id: string;
+  type: string;
+  mileage: number | null;
+  due_date: string | null;
+  notes: string | null;
+};
 
-    const { error } = await supabase.from("cars").insert({
-      user_id: userId,
-      year: parseInt(year, 10),
-      make,
-      model,
-      trim,
-      cover_url: coverUrl || null,
-    });
+export default function GaragePage() {
+  const [userId, setUserId] = useState<string | null>(null);
+  const [carId, setCarId] = useState<string | null>(null);
+  const [logs, setLogs] = useState<MaintenanceLog[]>([]);
 
-    setLoading(false);
-    if (error) {
-      console.error("Error adding car:", error.message);
-      alert("❌ Could not add car");
-    } else {
-      alert("✅ Car added!");
-      setOpen(false);
-      // optional: clear fields
-      setYear("");
-      setMake("");
-      setModel("");
-      setTrim("");
-      setCoverUrl("");
-    }
-  };
+  useEffect(() => {
+    const loadUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        setUserId(user.id);
+
+        // get first car
+        const { data: car } = await supabase
+          .from("cars")
+          .select("id")
+          .eq("user_id", user.id)
+          .limit(1)
+          .single();
+
+        if (car) {
+          setCarId(car.id);
+
+          // fetch maintenance logs for that car
+          const { data: logData } = await supabase
+            .from("maintenance")
+            .select("*")
+            .eq("car_id", car.id)
+            .order("due_date", { ascending: true });
+
+          if (logData) setLogs(logData);
+        }
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  if (!userId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+        <p>Loading your garage...</p>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className="mt-4 rounded-lg bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 px-4 py-2 text-white font-medium hover:bg-gradient-to-br shadow-lg shadow-purple-700/40"
-      >
-        + Add Car
-      </button>
+    <div className="min-h-screen bg-gradient-to-br from-black via-neutral-950 to-neutral-900 p-6 space-y-10">
+      {/* Profile Header */}
+      <GarageHeader userId={userId} />
 
-      {open && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-neutral-900 rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-lg font-semibold mb-4 text-white">
-              Add a New Car
-            </h2>
-            <form onSubmit={handleSave} className="space-y-3">
-              <input
-                type="text"
-                placeholder="Year"
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-                className="w-full rounded border p-2 bg-neutral-800 text-white"
-              />
-              <input
-                type="text"
-                placeholder="Make"
-                value={make}
-                onChange={(e) => setMake(e.target.value)}
-                className="w-full rounded border p-2 bg-neutral-800 text-white"
-              />
-              <input
-                type="text"
-                placeholder="Model"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="w-full rounded border p-2 bg-neutral-800 text-white"
-              />
-              <input
-                type="text"
-                placeholder="Trim"
-                value={trim}
-                onChange={(e) => setTrim(e.target.value)}
-                className="w-full rounded border p-2 bg-neutral-800 text-white"
-              />
-              <input
-                type="text"
-                placeholder="Cover Image URL"
-                value={coverUrl}
-                onChange={(e) => setCoverUrl(e.target.value)}
-                className="w-full rounded border p-2 bg-neutral-800 text-white"
-              />
-
-              <div className="flex justify-end gap-3 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="px-4 py-2 rounded bg-neutral-700 hover:bg-neutral-600 text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 rounded bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br text-white shadow-lg shadow-red-700/40 disabled:opacity-50"
-                >
-                  {loading ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </form>
-          </div>
+      {/* Car Section */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-white">Your Cars</h2>
+          {/* Modal is self-contained */}
+          <AddCarModal userId={userId} />
         </div>
+        <CarGrid userId={userId} />
+      </section>
+
+      {/* Specs Overview */}
+      {carId && (
+        <section>
+          <h2 className="text-xl font-semibold text-white mb-4">Quick Specs</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <SpecCard
+              spec={{ id: "hp", car_id: carId, label: "Horsepower", value: "450hp" }}
+            />
+            <SpecCard
+              spec={{ id: "torque", car_id: carId, label: "Torque", value: "450 lb-ft" }}
+            />
+            <SpecCard
+              spec={{ id: "weight", car_id: carId, label: "Weight", value: "1750kg" }}
+            />
+            <SpecCard
+              spec={{ id: "drive", car_id: carId, label: "Drivetrain", value: "AWD" }}
+            />
+          </div>
+        </section>
       )}
-    </>
+
+      {/* Maintenance + Budget */}
+      {carId && (
+        <section className="grid gap-6 lg:grid-cols-2">
+          <MaintenanceHub carId={carId} />
+          <BudgetBar userId={userId} />
+        </section>
+      )}
+
+      {/* Tasks + Parts */}
+      {carId && (
+        <section className="grid gap-6 lg:grid-cols-2">
+          <TaskBoard carId={carId} />
+          <PartsTable carId={carId} />
+        </section>
+      )}
+
+      {/* Photos + Build Timeline */}
+      {carId && (
+        <section className="grid gap-6 lg:grid-cols-2">
+          <PhotoCarousel carId={carId} />
+          <BuildTimeline carId={carId} />
+        </section>
+      )}
+
+      {/* Maintenance Logs */}
+      {carId && (
+        <section>
+          <h2 className="text-xl font-semibold text-white mb-4">
+            Maintenance Status
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {logs.length > 0 ? (
+              logs.map((log) => <MaintenanceWidget key={log.id} log={log} />)
+            ) : (
+              <p className="text-neutral-500 text-sm">No logs yet.</p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Activity Feed */}
+      <section>
+        <h2 className="text-xl font-semibold text-white mb-4">Recent Activity</h2>
+        <ActivityFeed />
+      </section>
+    </div>
   );
 }

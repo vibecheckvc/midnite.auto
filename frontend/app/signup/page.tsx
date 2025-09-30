@@ -8,141 +8,139 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (password !== confirmPassword) {
       alert('Passwords do not match');
       return;
     }
 
+    setLoading(true);
+
     const { error } = await supabase.auth.signUp({ email, password });
-    if (error) alert(error.message);
-    else {
-      alert('Check your email for confirmation!');
-      router.push('/login');
+
+    if (error) {
+      if (error.message.includes('User already registered')) {
+        alert('That email is already in use. Please log in instead.');
+        router.push('/login');
+      } else {
+        alert(error.message);
+      }
+      setLoading(false);
+      return;
     }
+
+    setLoading(false);
+    alert('✅ Check your email for confirmation!');
+    router.push('/login');
   };
 
   return (
-    <div className="relative min-h-screen">
-      {/* Grid Background */}
-      <div className="absolute inset-0 -z-10">
+    <div className="relative min-h-screen flex items-center justify-center bg-black overflow-hidden">
+      {/* Neon Grid Background */}
+      <div className="absolute inset-0 -z-10 bg-black">
         <div
-          className="absolute inset-0 h-full w-full bg-white"
+          className="absolute inset-0"
           style={{
             backgroundImage:
-              'linear-gradient(to right, #8080800a 1px, transparent 1px), linear-gradient(to bottom, #8080800a 1px, transparent 1px)',
-            backgroundSize: '14px 24px',
+              'linear-gradient(to right, rgba(128,0,128,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(128,0,128,0.1) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
           }}
-        ></div>
+        />
       </div>
 
-      {/* Signup Form */}
-      <section className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-        <div className="w-full shadow-md bg-white rounded-lg md:mt-0 sm:max-w-md xl:p-0">
-          <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
-            <h1 className="text-xl font-bold leading-tight tracking-tight md:text-2xl text-black">
-              Create an account
-            </h1>
-            <form className="space-y-4 md:space-y-6" onSubmit={handleSubmit}>
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="block mb-2 text-sm font-medium text-black">
-                  Your email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="border caret-black border-gray-300 text-black text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 bg-gray-200 dark:placeholder-gray-400 dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="name@company.com"
-                  required
-                />
-              </div>
+      {/* Signup Card */}
+      <div className="w-full max-w-md bg-black/60 border border-purple-600/40 shadow-lg shadow-purple-900/60 rounded-2xl backdrop-blur-xl p-8">
+        <h1 className="text-3xl font-extrabold text-center bg-gradient-to-r from-purple-400 via-fuchsia-500 to-red-500 bg-clip-text text-transparent mb-6">
+          Join Midnite
+        </h1>
 
-              {/* Password */}
-              <div>
-                <label htmlFor="password" className="block mb-2 text-sm font-medium text-black">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="border caret-black border-gray-300 text-black text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 bg-gray-200 dark:placeholder-gray-400 dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  required
-                />
-              </div>
-
-              {/* Confirm Password */}
-              <div>
-                <label htmlFor="confirm-password" className="block mb-2 text-sm font-medium text-black">
-                  Confirm password
-                </label>
-                <input
-                  type="password"
-                  name="confirm-password"
-                  id="confirm-password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="border caret-black border-gray-300 text-black text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 bg-gray-200 dark:placeholder-gray-400 dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  required
-                />
-              </div>
-
-              {/* Terms */}
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="terms"
-                    aria-describedby="terms"
-                    type="checkbox"
-                    className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800"
-                    required
-                  />
-                </div>
-                <div className="ml-3 text-sm">
-                  <label htmlFor="terms" className="font-light text-gray-500 dark:text-gray-300">
-                    I accept the{' '}
-                    <a
-                      className="font-medium text-primary-600 hover:underline dark:text-primary-500"
-                      href="#"
-                    >
-                      Terms and Conditions
-                    </a>
-                  </label>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                className="w-full cursor-pointer text-white bg-gradient-to-r from-gray-800 via-gray-900 to-black hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-gradient-to-r dark:from-gray-800 dark:via-gray-900 dark:to-black dark:hover:bg-gradient-to-br dark:focus:ring-gray-700"
-              >
-                Create an account
-              </button>
-
-              <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                Already have an account?{' '}
-                <a
-                  href="/login"
-                  className="font-medium text-primary-600 hover:underline dark:text-primary-500"
-                >
-                  Login here
-                </a>
-              </p>
-            </form>
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          {/* Email */}
+          <div>
+            <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-300">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@midnite.com"
+              required
+              className="w-full rounded-lg bg-neutral-900 border border-neutral-700 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 caret-purple-400 px-3 py-2.5"
+            />
           </div>
-        </div>
-      </section>
+
+          {/* Password */}
+          <div>
+            <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-300">
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full rounded-lg bg-neutral-900 border border-neutral-700 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 caret-purple-400 px-3 py-2.5"
+            />
+          </div>
+
+          {/* Confirm Password */}
+          <div>
+            <label htmlFor="confirm-password" className="block mb-2 text-sm font-medium text-gray-300">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              id="confirm-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full rounded-lg bg-neutral-900 border border-neutral-700 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 caret-purple-400 px-3 py-2.5"
+            />
+          </div>
+
+          {/* Terms */}
+          <div className="flex items-start">
+            <input
+              id="terms"
+              type="checkbox"
+              className="w-4 h-4 border border-gray-600 rounded bg-neutral-900 focus:ring-2 focus:ring-purple-500"
+              required
+            />
+            <label htmlFor="terms" className="ml-2 text-sm text-gray-400">
+              I accept the{' '}
+              <a href="#" className="font-medium text-purple-400 hover:text-fuchsia-400">
+                Terms and Conditions
+              </a>
+            </label>
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full cursor-pointer text-white font-semibold rounded-lg px-5 py-2.5 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-red-600 hover:shadow-[0_0_15px_rgba(168,85,247,0.8)] transition-all disabled:opacity-50"
+          >
+            {loading ? 'Creating...' : 'Join Midnite'}
+          </button>
+
+          <p className="text-sm text-gray-400 text-center">
+            Already have an account?{' '}
+            <a href="/login" className="font-medium text-purple-400 hover:text-fuchsia-400">
+              Sign in here
+            </a>
+          </p>
+        </form>
+      </div>
     </div>
   );
 }

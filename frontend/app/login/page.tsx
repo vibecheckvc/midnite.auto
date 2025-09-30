@@ -7,89 +7,96 @@ import { useRouter } from 'next/navigation';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
       alert(error.message);
+      setLoading(false);
     } else {
-      router.push('/dashboard'); // replace with the page after login
+      router.push('/garage'); // 🚀 main app page
     }
   };
 
   return (
-    <div className="relative min-h-screen">
-      {/* Grid background */}
-      <div className="absolute inset-0 -z-10">
+    <div className="relative min-h-screen flex items-center justify-center bg-black overflow-hidden">
+      {/* Neon Grid Background */}
+      <div className="absolute inset-0 -z-10 bg-black">
         <div
-          className="absolute inset-0 h-full w-full bg-white"
+          className="absolute inset-0"
           style={{
             backgroundImage:
-              'linear-gradient(to right, #8080800a 1px, transparent 1px), linear-gradient(to bottom, #8080800a 1px, transparent 1px)',
-            backgroundSize: '14px 24px',
+              'linear-gradient(to right, rgba(128,0,128,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(128,0,128,0.1) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
           }}
-        ></div>
+        />
       </div>
 
-      {/* Login Form */}
-      <section className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-        <div className="w-full shadow-md bg-white rounded-lg md:mt-0 sm:max-w-md xl:p-0">
-          <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
-            <h1 className="text-xl font-bold leading-tight tracking-tight md:text-2xl text-black">
-              Login
-            </h1>
-            <form className="space-y-4 md:space-y-6" onSubmit={handleLogin}>
-              <div>
-                <label htmlFor="email" className="block mb-2 text-sm font-medium text-black">
-                  Your email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  required
-                  className="border caret-black border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 bg-gray-200"
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="block mb-2 text-sm font-medium text-black">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="border caret-black border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 bg-gray-200"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full cursor-pointer text-white bg-gradient-to-r from-gray-800 via-gray-900 to-black hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
-              >
-                Login
-              </button>
-              <p className="text-sm font-light text-gray-500">
-                Don&apos;t have an account?{' '}
-                <a href="/signup" className="font-medium text-primary-600 hover:underline">
-                  Signup here
-                </a>
-              </p>
-            </form>
+      {/* Login Card */}
+      <div className="w-full max-w-md bg-black/60 border border-purple-600/40 shadow-lg shadow-purple-900/60 rounded-2xl backdrop-blur-xl p-8">
+        <h1 className="text-3xl font-extrabold text-center bg-gradient-to-r from-purple-400 via-fuchsia-500 to-red-500 bg-clip-text text-transparent mb-6">
+          Sign into Midnite
+        </h1>
+
+        <form className="space-y-5" onSubmit={handleLogin}>
+          {/* Email */}
+          <div>
+            <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-300">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@midnite.com"
+              required
+              className="w-full rounded-lg bg-neutral-900 border border-neutral-700 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 caret-purple-400 px-3 py-2.5"
+            />
           </div>
-        </div>
-      </section>
+
+          {/* Password */}
+          <div>
+            <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-300">
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full rounded-lg bg-neutral-900 border border-neutral-700 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 caret-purple-400 px-3 py-2.5"
+            />
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full cursor-pointer text-white font-semibold rounded-lg px-5 py-2.5 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-red-600 hover:shadow-[0_0_15px_rgba(168,85,247,0.8)] transition-all disabled:opacity-50"
+          >
+            {loading ? 'Signing in…' : 'Enter Midnite'}
+          </button>
+
+          <p className="text-sm text-gray-400 text-center">
+            Don&apos;t have an account?{' '}
+            <a href="/signup" className="font-medium text-purple-400 hover:text-fuchsia-400">
+              Sign up here
+            </a>
+          </p>
+        </form>
+      </div>
     </div>
   );
 }
