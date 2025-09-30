@@ -1,55 +1,105 @@
-'use client';
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/utils/supabaseClient";
 
 type Part = {
   id: string;
+  car_id: string;
   name: string;
-  vendor?: string;
-  price?: number;
-  status: 'wishlist' | 'ordered' | 'installed';
+  category: string | null;
+  cost: number | null;
+  installed: boolean;
 };
 
-const demoParts: Part[] = [
-  { id: '1', name: 'KW V3 Coilovers', vendor: 'ECS Tuning', price: 2200, status: 'installed' },
-  { id: '2', name: 'CTS Turbo Intake', vendor: 'CTS Turbo', price: 350, status: 'ordered' },
-  { id: '3', name: 'APR Exhaust', vendor: 'APR', price: 1800, status: 'wishlist' },
-];
+export function PartsTable({ carId }: { carId: string }) {
+  const [parts, setParts] = useState<Part[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export function PartsTable() {
+  useEffect(() => {
+    const fetchParts = async () => {
+      setLoading(true);
+
+      const { data, error } = await supabase
+        .from("car_parts")
+        .select("*")
+        .eq("car_id", carId);
+
+      if (error) {
+        console.error("Error fetching parts:", error.message);
+      } else {
+        setParts(data || []);
+      }
+
+      setLoading(false);
+    };
+
+    fetchParts();
+
+    // realtime updates
+    const channel = supabase
+      .channel("car-parts")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "car_parts", filter: `car_id=eq.${carId}` },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setParts((prev) => [...prev, payload.new as Part]);
+          }
+          if (payload.eventType === "UPDATE") {
+            setParts((prev) =>
+              prev.map((p) =>
+                p.id === (payload.new as Part).id ? (payload.new as Part) : p
+              )
+            );
+          }
+          if (payload.eventType === "DELETE") {
+            setParts((prev) =>
+              prev.filter((p) => p.id !== (payload.old as Part).id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [carId]);
+
   return (
-    <div className="rounded-lg border bg-white/5 backdrop-blur p-4">
-      <h2 className="font-semibold mb-4">Parts</h2>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-neutral-400 border-b border-neutral-700">
-            <th className="py-2">Part</th>
-            <th className="py-2">Vendor</th>
-            <th className="py-2">Price</th>
-            <th className="py-2">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {demoParts.map((part) => (
-            <tr key={part.id} className="border-b border-neutral-800">
-              <td className="py-2">{part.name}</td>
-              <td className="py-2">{part.vendor || '-'}</td>
-              <td className="py-2">${part.price?.toLocaleString() || '-'}</td>
-              <td className="py-2">
-                <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${
-                    part.status === 'wishlist'
-                      ? 'bg-yellow-500/20 text-yellow-400'
-                      : part.status === 'ordered'
-                      ? 'bg-blue-500/20 text-blue-400'
-                      : 'bg-green-500/20 text-green-400'
-                  }`}
-                >
-                  {part.status}
-                </span>
-              </td>
+    <div className="rounded-lg border bg-black/40 backdrop-blur p-4 shadow-lg shadow-purple-700/30">
+      <h2 className="font-semibold mb-4 text-white">Parts</h2>
+      {loading ? (
+        <p className="text-neutral-400">Loading parts...</p>
+      ) : parts.length === 0 ? (
+        <p className="text-neutral-400">No parts logged yet.</p>
+      ) : (
+        <table className="w-full text-sm text-left text-neutral-400">
+          <thead>
+            <tr className="text-white">
+              <th className="py-2">Name</th>
+              <th className="py-2">Category</th>
+              <th className="py-2">Cost</th>
+              <th className="py-2">Installed</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {parts.map((part) => (
+              <tr key={part.id} className="border-t border-neutral-800">
+                <td className="py-2">{part.name}</td>
+                <td className="py-2">{part.category || "-"}</td>
+                <td className="py-2">
+                  {part.cost ? `$${part.cost.toLocaleString()}` : "-"}
+                </td>
+                <td className="py-2">
+                  {part.installed ? "✅" : "⏳"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
