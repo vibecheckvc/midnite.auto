@@ -4,7 +4,13 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { useRouter } from 'next/navigation';
 
+// components
 import Banner from './components/Banner';
+import Bio from './components/Bio';
+import FriendsList from './components/FriendsList';
+import Achievements from './components/Achievements';
+import GarageShowcase from './components/GarageShowcase';
+import PostsFeed from './components/PostsFeed';
 
 // Types
 type Profile = {
@@ -14,37 +20,9 @@ type Profile = {
   bio: string | null;
 };
 
-type Car = {
-  id: string;
-  make: string;
-  model: string;
-  year: number;
-  trim?: string | null;
-  mileage?: number | null;
-  cover_url?: string | null;
-};
-
-type Post = {
-  id: string;
-  title: string;
-  description?: string | null;
-  image_url?: string | null;
-  created_at: string;
-};
-
-type Friend = {
-  id: string;
-  username: string | null;
-  full_name: string | null;
-  avatar_url: string | null;
-};
-
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [cars, setCars] = useState<Car[]>([]);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [achievements, setAchievements] = useState<string[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -60,7 +38,8 @@ export default function ProfilePage() {
         return;
       }
 
-      // Profile
+      setUserId(user.id);
+
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('username, full_name, avatar_url, bio')
@@ -72,26 +51,6 @@ export default function ProfilePage() {
       } else {
         setProfile(profileData);
       }
-
-      // Cars
-      const { data: carsData } = await supabase
-        .from('cars')
-        .select('id, make, model, year, trim, mileage, cover_url')
-        .eq('user_id', user.id);
-      setCars((carsData as Car[]) || []);
-
-      // Posts
-      const { data: postsData } = await supabase
-        .from('builds')
-        .select('id, title, description, image_url, created_at')
-        .eq('user_id', user.id);
-      setPosts((postsData as Post[]) || []);
-
-      // Friends (placeholder until follow system)
-      setFriends([]);
-
-      // Achievements (placeholder until badges are wired)
-      setAchievements([]);
 
       setLoading(false);
     };
@@ -107,7 +66,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!profile) {
+  if (!profile || !userId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
         No profile found.
@@ -116,22 +75,57 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 space-y-6">
-      {/* 🔥 Banner with profile + stats */}
-      <Banner
-        profile={profile}
-        stats={{
-          cars: cars.length,
-          posts: posts.length,
-          followers: friends.length,
-        }}
-      />
+    <div className="min-h-screen bg-gradient-to-b from-black via-neutral-950 to-black text-white">
+      {/* Banner at top */}
+      <section className="max-w-6xl mx-auto px-4 py-8">
+        <Banner
+          profile={profile}
+          stats={{
+            cars: 0,
+            posts: 0,
+            followers: 0,
+          }}
+        />
+      </section>
 
-      {/* Next up: wire other widgets */}
-      {/* <Bio profile={profile} /> */}
-      {/* <FriendsList friends={friends} /> */}
-      {/* <Achievements achievements={achievements} /> */}
-      {/* <PostsList posts={posts} /> */}
+      {/* Grid layout */}
+      <section className="max-w-6xl mx-auto px-4 pb-16 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left column */}
+        <div className="space-y-8">
+          {/* Bio */}
+          <div className="bg-black/40 rounded-2xl border border-purple-600/30 shadow-lg shadow-purple-900/40 backdrop-blur-md p-6">
+            <h2 className="text-lg font-bold text-purple-400 mb-3">About</h2>
+            <Bio profile={profile} />
+          </div>
+
+          {/* Garage */}
+          <div className="bg-black/40 rounded-2xl border border-purple-600/30 shadow-lg shadow-purple-900/40 backdrop-blur-md p-6">
+            <h2 className="text-lg font-bold text-purple-400 mb-3">Garage</h2>
+            <GarageShowcase userId={userId} />
+          </div>
+
+          {/* Achievements */}
+          <div className="bg-black/40 rounded-2xl border border-purple-600/30 shadow-lg shadow-purple-900/40 backdrop-blur-md p-6">
+            <h2 className="text-lg font-bold text-purple-400 mb-3">Achievements</h2>
+            <Achievements userId={userId} />
+          </div>
+        </div>
+
+        {/* Right column (posts + friends) */}
+        <div className="space-y-8 lg:col-span-2">
+          {/* Posts */}
+          <div className="bg-black/40 rounded-2xl border border-purple-600/30 shadow-lg shadow-purple-900/40 backdrop-blur-md p-6">
+            <h2 className="text-lg font-bold text-purple-400 mb-3">Posts</h2>
+            <PostsFeed userId={userId} />
+          </div>
+
+          {/* Friends */}
+          <div className="bg-black/40 rounded-2xl border border-purple-600/30 shadow-lg shadow-purple-900/40 backdrop-blur-md p-6">
+            <h2 className="text-lg font-bold text-purple-400 mb-3">Friends</h2>
+            <FriendsList userId={userId} />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

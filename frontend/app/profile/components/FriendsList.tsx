@@ -1,48 +1,104 @@
 'use client';
 
-type Friend = {
+import { useEffect, useState } from 'react';
+import { supabase } from '@/utils/supabaseClient';
+import Image from 'next/image';
+
+type FriendProfile = {
   id: string;
-  username: string;
+  username: string | null;
+  full_name: string | null;
   avatar_url: string | null;
 };
 
-type FriendsListProps = {
-  friends: Friend[];
+type FriendRow = {
+  id: string;
+  status: string;
+  profiles: FriendProfile | FriendProfile[] | null;
 };
 
-export default function FriendsList({ friends }: FriendsListProps) {
-  if (!friends || friends.length === 0) {
-    return <p className="text-gray-400">No friends yet. Start connecting!</p>;
-  }
+export default function FriendsList({ userId }: { userId: string }) {
+  const [friends, setFriends] = useState<FriendProfile[]>([]);
+
+  useEffect(() => {
+    const fetchFriends = async () => {
+      const { data, error } = await supabase
+        .from('friends')
+        .select(
+          `
+          id,
+          status,
+          profiles:friend_id (
+            id,
+            username,
+            full_name,
+            avatar_url
+          )
+        `
+        )
+        .eq('user_id', userId)
+        .eq('status', 'accepted');
+
+      if (error) {
+        console.error('Error fetching friends:', error.message);
+        return;
+      }
+
+      // Safely flatten results
+      const mapped: FriendProfile[] =
+        (data as FriendRow[]).map((f) => {
+          if (Array.isArray(f.profiles)) return f.profiles[0];
+          return f.profiles;
+        }).filter((p): p is FriendProfile => p !== null);
+
+      setFriends(mapped);
+    };
+
+    fetchFriends();
+
+    // realtime sub
+    const channel = supabase
+      .channel('realtime-friends')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'friends' },
+        () => {
+          fetchFriends();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
 
   return (
-    <div className="bg-black/60 backdrop-blur border border-purple-600/40 rounded-xl p-4 shadow-md shadow-purple-900/40">
-      <h2 className="text-lg font-bold text-purple-400 mb-4">Friends</h2>
-
-      <div className="flex gap-4 overflow-x-auto scrollbar-thin scrollbar-thumb-purple-700 scrollbar-track-black">
-        {friends.map((f) => (
-          <div
-            key={f.id}
-            className="flex flex-col items-center min-w-[80px]"
-          >
-            <img
-              src={f.avatar_url || '/default-avatar.png'}
-              alt={f.username}
-              className="w-14 h-14 rounded-full border-2 border-purple-600 shadow-md shadow-purple-800/50"
-            />
-            <p className="text-xs text-gray-300 mt-2 truncate">{f.username}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-4 text-right">
-        <a
-          href="/friends"
-          className="text-sm font-medium text-purple-400 hover:text-fuchsia-400"
-        >
-          View All →
-        </a>
-      </div>
+    <div className="bg-neutral-900 p-6 rounded-xl shadow-md">
+      <h2 className="text-lg font-semibold mb-4">Friends</h2>
+      {friends.length === 0 ? (
+        <p className="text-gray-400">No friends yet.</p>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {friends.map((f) => (
+            <div
+              key={f.id}
+              className="flex flex-col items-center text-center"
+            >
+              <Image
+                src={f.avatar_url || '/default-avatar.png'}
+                alt={f.username || 'Friend'}
+                width={40}
+                height={40}
+                className="rounded-full border border-purple-500"
+              />
+              <p className="mt-2 text-sm text-white">
+                {f.username || 'Unknown'}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,19 +1,46 @@
-'use client';
+"use client";
+
+import Image from "next/image";
 
 type BioProps = {
   profile: {
-    bio: string | null;
+    username: string | null;
     full_name: string | null;
+    bio: string | null;
+    avatar_url: string | null;
   };
 };
 
 export default function Bio({ profile }: BioProps) {
   return (
-    <div className="bg-black/60 backdrop-blur border border-purple-700/40 rounded-xl p-6 shadow-lg shadow-purple-900/40">
-      <h2 className="text-lg font-bold text-purple-400 mb-2">About</h2>
-      <p className="text-gray-300">
-        {profile?.bio || 'This racer hasn’t written a bio yet…'}
-      </p>
+    <div className="rounded-xl bg-neutral-900/60 border border-purple-700/30 shadow-md shadow-purple-900/40 p-6">
+      <div className="flex items-center gap-4">
+        {/* Avatar */}
+        <div className="relative w-20 h-20">
+          <Image
+            src={profile.avatar_url || "/default-avatar.png"}
+            alt={profile.username || "User avatar"}
+            fill
+            className="rounded-full border-2 border-purple-500 object-cover"
+            priority // helps LCP, loads fast
+          />
+        </div>
+
+        {/* Name + Username */}
+        <div>
+          <h2 className="text-xl font-semibold text-white">
+            {profile.full_name || profile.username || "Unnamed Driver"}
+          </h2>
+          {profile.username && (
+            <p className="text-sm text-gray-400">@{profile.username}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Bio */}
+      {profile.bio && (
+        <p className="mt-4 text-gray-300 leading-relaxed">{profile.bio}</p>
+      )}
     </div>
   );
 }
