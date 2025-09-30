@@ -19,7 +19,7 @@ const Hero = () => {
         {/* Left Side: Text */}
         <div className="flex items-center justify-center lg:justify-start px-6 lg:px-20">
           <div className="text-center lg:text-left">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-6 leading-tight">
+            <h1 className="double text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-6 leading-tight">
               The 24/7 Car Meet
             </h1>
             <p className="text-lg md:text-xl text-slate-900 mb-8 leading-relaxed">
@@ -29,7 +29,7 @@ const Hero = () => {
             </p>
             <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
               <button className="text-white font-bold bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-purple-300 dark:focus:ring-purple-800 shadow-lg shadow-purple-500/50 dark:shadow-lg dark:shadow-purple-800/80 rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">
-                Our Mission
+                Mission statement
               </button>
             </div>
           </div>
