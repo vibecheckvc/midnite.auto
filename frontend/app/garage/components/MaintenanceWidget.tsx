@@ -1,38 +1,51 @@
-'use client';
+"use client"
 
-type Maintenance = {
-  id: string;
-  type: string;
-  date: string;
-  odo: number;
-  notes?: string;
-};
+import React from "react"
 
-const demoLogs: Maintenance[] = [
-  { id: '1', type: 'Oil Change', date: '2024-01-15', odo: 82000, notes: 'LiquiMoly 5W40' },
-  { id: '2', type: 'Brake Pads', date: '2024-02-20', odo: 83000, notes: 'Hawk HPS' },
-];
-
-export function MaintenanceWidget() {
-  return (
-    <div className="rounded-lg border bg-white/5 backdrop-blur p-4">
-      <h2 className="font-semibold mb-3">Maintenance Logs</h2>
-      <ul className="space-y-3 text-sm">
-        {demoLogs.map((log) => (
-          <li key={log.id} className="rounded-lg bg-neutral-800 p-3">
-            <div className="flex justify-between">
-              <p className="font-medium">{log.type}</p>
-              <span className="text-xs text-neutral-400">{log.date}</span>
-            </div>
-            <p className="text-neutral-400">Odo: {log.odo.toLocaleString()} km</p>
-            {log.notes && <p className="text-xs text-neutral-500">{log.notes}</p>}
-          </li>
-        ))}
-      </ul>
-
-      <button className="mt-4 w-full rounded bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-        + Add Log
-      </button>
-    </div>
-  );
+type MaintenanceWidgetProps = {
+  label: string
+  progress: number // 0 → 100
+  color?: "red" | "purple"
 }
+
+export function MaintenanceWidget({
+  label,
+  progress,
+  color = "purple",
+}: MaintenanceWidgetProps) {
+  const circleColor =
+    color === "red"
+      ? "stroke-red-500 drop-shadow-[0_0_10px_#ef4444]"
+      : "stroke-purple-500 drop-shadow-[0_0_10px_#a855f7]"
+
+  return (
+    <div className="flex flex-col items-center justify-center bg-black/60 backdrop-blur-md rounded-xl p-6 shadow-lg border border-neutral-800">
+      <svg className="w-28 h-28 transform -rotate-90" viewBox="0 0 100 100">
+        {/* Base ring */}
+        <circle
+          className="stroke-neutral-700"
+          cx="50"
+          cy="50"
+          r="45"
+          strokeWidth="10"
+          fill="transparent"
+        />
+        {/* Progress ring */}
+        <circle
+          className={circleColor}
+          cx="50"
+          cy="50"
+          r="45"
+          strokeWidth="10"
+          fill="transparent"
+          strokeDasharray="283"
+          strokeDashoffset={283 - (283 * progress) / 100}
+          strokeLinecap="round"
+        />
+      </svg>
+      <p className="mt-4 font-semibold">{label}</p>
+      <p className="text-sm text-neutral-400">{100 - progress}% Remaining</p>
+    </div>
+  )
+}
+
