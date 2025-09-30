@@ -1,47 +1,17 @@
-'use client';
+"use client";
 
 type Spec = {
-  hp: number;
-  torque: number;
-  drivetrain: string;
-  weight?: number;
-  tires?: string;
+  id: string;
+  car_id: string;
+  label: string;
+  value: string;
 };
 
-type SpecCardProps = {
-  specs: Spec;
-};
-
-export function SpecCard({ specs }: SpecCardProps) {
+export function SpecCard({ spec }: { spec: Spec }) {
   return (
-    <div className="rounded-lg border bg-white/5 backdrop-blur p-4">
-      <h2 className="font-semibold mb-3">Car Specs</h2>
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <p className="text-neutral-400">Horsepower</p>
-          <p className="font-medium">{specs.hp} hp</p>
-        </div>
-        <div>
-          <p className="text-neutral-400">Torque</p>
-          <p className="font-medium">{specs.torque} lb-ft</p>
-        </div>
-        <div>
-          <p className="text-neutral-400">Drivetrain</p>
-          <p className="font-medium">{specs.drivetrain}</p>
-        </div>
-        {specs.weight && (
-          <div>
-            <p className="text-neutral-400">Weight</p>
-            <p className="font-medium">{specs.weight} kg</p>
-          </div>
-        )}
-        {specs.tires && (
-          <div>
-            <p className="text-neutral-400">Tires</p>
-            <p className="font-medium">{specs.tires}</p>
-          </div>
-        )}
-      </div>
+    <div className="rounded-lg border bg-black/40 backdrop-blur p-4 shadow-md shadow-purple-700/30">
+      <p className="text-sm text-neutral-400">{spec.label}</p>
+      <h3 className="text-lg font-semibold text-white">{spec.value}</h3>
     </div>
   );
 }
