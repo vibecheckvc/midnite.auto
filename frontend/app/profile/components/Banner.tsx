@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { supabase } from '@/utils/supabaseClient';
+import { useState } from "react";
+import { supabase } from "@/utils/supabaseClient";
+import Image from "next/image";
 
 type BannerProps = {
   profile: {
@@ -28,19 +29,19 @@ export default function Banner({ profile, stats }: BannerProps) {
     if (!user) return;
 
     const { error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .update({
         username: form.username,
         full_name: form.full_name,
         avatar_url: form.avatar_url,
         bio: form.bio,
       })
-      .eq('id', user.id);
+      .eq("id", user.id);
 
     if (error) {
-      alert('❌ Failed to update: ' + error.message);
+      alert("❌ Failed to update: " + error.message);
     } else {
-      alert('✅ Profile updated!');
+      alert("✅ Profile updated!");
       setEditing(false);
     }
   };
@@ -48,11 +49,17 @@ export default function Banner({ profile, stats }: BannerProps) {
   return (
     <div className="bg-gradient-to-r from-purple-600 via-fuchsia-700 to-red-600 rounded-xl p-6 shadow-lg relative">
       <div className="flex items-center space-x-4">
-        <img
-          src={profile.avatar_url || '/default-avatar.png'}
-          alt="avatar"
-          className="w-20 h-20 rounded-full border-2 border-white shadow-lg"
-        />
+        {/* Optimized Avatar */}
+        <div className="relative w-20 h-20">
+          <Image
+            src={profile.avatar_url || "/default-avatar.png"}
+            alt={profile.username || "avatar"}
+            fill
+            className="rounded-full border-2 border-white shadow-lg object-cover"
+            priority
+          />
+        </div>
+
         <div>
           <h1 className="text-2xl font-bold">{profile.username}</h1>
           <p className="text-gray-200">{profile.full_name}</p>
@@ -82,7 +89,7 @@ export default function Banner({ profile, stats }: BannerProps) {
             <input
               type="text"
               placeholder="Username"
-              value={form.username || ''}
+              value={form.username || ""}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
               className="w-full rounded-lg bg-neutral-800 p-2 border border-neutral-700 text-white"
             />
@@ -90,7 +97,7 @@ export default function Banner({ profile, stats }: BannerProps) {
             <input
               type="text"
               placeholder="Full Name"
-              value={form.full_name || ''}
+              value={form.full_name || ""}
               onChange={(e) => setForm({ ...form, full_name: e.target.value })}
               className="w-full rounded-lg bg-neutral-800 p-2 border border-neutral-700 text-white"
             />
@@ -98,14 +105,14 @@ export default function Banner({ profile, stats }: BannerProps) {
             <input
               type="text"
               placeholder="Avatar URL"
-              value={form.avatar_url || ''}
+              value={form.avatar_url || ""}
               onChange={(e) => setForm({ ...form, avatar_url: e.target.value })}
               className="w-full rounded-lg bg-neutral-800 p-2 border border-neutral-700 text-white"
             />
 
             <textarea
               placeholder="Bio"
-              value={form.bio || ''}
+              value={form.bio || ""}
               onChange={(e) => setForm({ ...form, bio: e.target.value })}
               className="w-full rounded-lg bg-neutral-800 p-2 border border-neutral-700 text-white"
             />
