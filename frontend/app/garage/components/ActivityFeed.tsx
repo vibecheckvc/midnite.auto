@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { supabase } from "@/utils/supabaseClient";
 import { RealtimePostgresInsertPayload } from "@supabase/supabase-js";
@@ -74,66 +74,88 @@ export default function ActivityFeed() {
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
 
+  /** simple caches to avoid repeat lookups */
+  const buildTitleCache = useRef<Record<string, string>>({});
+  const eventTitleCache = useRef<Record<string, string>>({});
+  const seenIds = useRef<Set<string>>(new Set());
+
+  const MAX_ITEMS = 50;
+
   const selectCols = `
     id, user_id, type, ref_id, created_at,
     profiles ( username, avatar_url )
   ` as const;
 
-  /** Batch fetch builds + events */
+  /** Batch fetch titles but only for missing ids */
   const enrichRefs = async (rows: ActivityRow[]): Promise<ActivityRow[]> => {
-    const buildIds = rows
-      .filter((a) => a.type === "build_added" && a.ref_id)
-      .map((a) => a.ref_id as string);
+    const missingBuildIds = Array.from(
+      new Set(
+        rows
+          .filter((a) => a.type === "build_added" && a.ref_id && !buildTitleCache.current[a.ref_id])
+          .map((a) => a.ref_id as string)
+      )
+    );
 
-    const eventIds = rows
-      .filter((a) => a.type === "event_joined" && a.ref_id)
-      .map((a) => a.ref_id as string);
+    const missingEventIds = Array.from(
+      new Set(
+        rows
+          .filter((a) => a.type === "event_joined" && a.ref_id && !eventTitleCache.current[a.ref_id])
+          .map((a) => a.ref_id as string)
+      )
+    );
 
-    let buildMap: Record<string, string> = {};
-    let eventMap: Record<string, string> = {};
-
-    if (buildIds.length > 0) {
+    if (missingBuildIds.length > 0) {
       const { data } = await supabase
         .from("builds")
         .select("id, title")
-        .in("id", buildIds);
-
+        .in("id", missingBuildIds);
       if (data) {
-        buildMap = Object.fromEntries(data.map((b) => [b.id, b.title]));
+        for (const b of data) {
+          if (b?.id && typeof b.title === "string") {
+            buildTitleCache.current[b.id] = b.title;
+          }
+        }
       }
     }
 
-    if (eventIds.length > 0) {
+    if (missingEventIds.length > 0) {
       const { data } = await supabase
         .from("events")
         .select("id, title")
-        .in("id", eventIds);
-
+        .in("id", missingEventIds);
       if (data) {
-        eventMap = Object.fromEntries(data.map((e) => [e.id, e.title]));
+        for (const e of data) {
+          if (e?.id && typeof e.title === "string") {
+            eventTitleCache.current[e.id] = e.title;
+          }
+        }
       }
     }
 
+    // apply cached titles
     return rows.map((a) => {
       if (a.type === "build_added" && a.ref_id) {
-        return { ...a, ref_title: buildMap[a.ref_id] ?? null };
+        return { ...a, ref_title: buildTitleCache.current[a.ref_id] ?? null };
       }
       if (a.type === "event_joined" && a.ref_id) {
-        return { ...a, ref_title: eventMap[a.ref_id] ?? null };
+        return { ...a, ref_title: eventTitleCache.current[a.ref_id] ?? null };
       }
       return a;
     });
   };
 
   useEffect(() => {
+    let aborted = false;
+
     const fetchActivities = async () => {
       setLoading(true);
-
       const { data, error } = await supabase
         .from("activities")
         .select(selectCols)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(30);
+
+      if (aborted) return;
 
       if (error) {
         console.error("ActivityFeed fetch error:", error.message);
@@ -143,16 +165,19 @@ export default function ActivityFeed() {
           .map(normalizeActivity)
           .filter((x): x is ActivityRow => x !== null);
 
+        // prime seen ids to avoid duplicates when realtime inserts back-fill
+        for (const r of rows) seenIds.current.add(r.id);
+
         const enriched = await enrichRefs(rows);
-        setActivities(enriched);
+        if (!aborted) setActivities(enriched);
       }
 
-      setLoading(false);
+      if (!aborted) setLoading(false);
     };
 
     fetchActivities();
 
-    // realtime insert → fetch new row + batch resolve its ref
+    // realtime insert → fetch only the new row + fetch titles ONLY if missing
     const channel = supabase
       .channel("activity-feed")
       .on(
@@ -161,29 +186,40 @@ export default function ActivityFeed() {
         async (
           payload: RealtimePostgresInsertPayload<Record<string, unknown>>
         ) => {
+          if (aborted) return;
+
           const insertedId =
             isObj(payload.new) && typeof payload.new["id"] === "string"
               ? (payload.new["id"] as string)
               : null;
           if (!insertedId) return;
 
-          const { data } = await supabase
+          // guard against duplicates (some clients can receive dupes)
+          if (seenIds.current.has(insertedId)) return;
+
+          const { data, error } = await supabase
             .from("activities")
             .select(selectCols)
             .eq("id", insertedId)
             .single();
 
+          if (error) return;
+
           const normalized = normalizeActivity(data as unknown);
-          if (normalized) {
-            const [enriched] = await enrichRefs([normalized]);
-            setActivities((prev) => [enriched, ...prev]);
-          }
+          if (!normalized) return;
+
+          const [enriched] = await enrichRefs([normalized]);
+
+          // mark as seen and prepend; keep list bounded
+          seenIds.current.add(enriched.id);
+          setActivities((prev) => [enriched, ...prev].slice(0, MAX_ITEMS));
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      aborted = true;
+      void supabase.removeChannel(channel);
     };
   }, []);
 
@@ -230,6 +266,7 @@ export default function ActivityFeed() {
                   alt={a.profiles.username ?? "user"}
                   width={32}
                   height={32}
+                  sizes="32px"                 
                   className="rounded-full"
                 />
               ) : (
