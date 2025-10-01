@@ -2,18 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
-import { MaintenanceWidget } from "./MaintenanceWidget";
+import { MaintenanceWidget, type MaintenanceLog } from "./MaintenanceWidget";
 
-type MaintenanceLog = {
-  id: string;
-  car_id: string;
-  type: string;
-  mileage: number | null;
-  due_date: string | null;
-  notes: string | null;
-};
-
-export function MaintenanceHub({ carId }: { carId: string }) {
+export default function MaintenanceHub({ carId }: { carId: string }) {
   const [logs, setLogs] = useState<MaintenanceLog[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,14 +14,17 @@ export function MaintenanceHub({ carId }: { carId: string }) {
 
       const { data, error } = await supabase
         .from("maintenance_logs")
-        .select("*")
+        .select(
+          "id, car_id, user_id, type, interval_miles, last_done_miles, current_miles, interval_months, last_done_date, created_at"
+        )
         .eq("car_id", carId)
-        .order("due_date", { ascending: true });
+        .order("last_done_date", { ascending: false });
 
       if (error) {
         console.error("Error fetching maintenance logs:", error.message);
+        setLogs([]);
       } else {
-        setLogs(data || []);
+        setLogs(data as MaintenanceLog[]); // shape matches our shared type
       }
 
       setLoading(false);
@@ -38,29 +32,21 @@ export function MaintenanceHub({ carId }: { carId: string }) {
 
     fetchLogs();
 
-    // realtime inserts/updates
+    // realtime inserts/updates/deletes for this car
     const channel = supabase
-      .channel("maintenance")
+      .channel(`maintenance_logs_${carId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "maintenance_logs", filter: `car_id=eq.${carId}` },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            setLogs((prev) => [...prev, payload.new as MaintenanceLog]);
-          }
-          if (payload.eventType === "UPDATE") {
+            setLogs((prev) => [payload.new as MaintenanceLog, ...prev]);
+          } else if (payload.eventType === "UPDATE") {
             setLogs((prev) =>
-              prev.map((log) =>
-                log.id === (payload.new as MaintenanceLog).id
-                  ? (payload.new as MaintenanceLog)
-                  : log
-              )
+              prev.map((l) => (l.id === (payload.new as MaintenanceLog).id ? (payload.new as MaintenanceLog) : l))
             );
-          }
-          if (payload.eventType === "DELETE") {
-            setLogs((prev) =>
-              prev.filter((log) => log.id !== (payload.old as MaintenanceLog).id)
-            );
+          } else if (payload.eventType === "DELETE") {
+            setLogs((prev) => prev.filter((l) => l.id !== (payload.old as MaintenanceLog).id));
           }
         }
       )
@@ -72,10 +58,10 @@ export function MaintenanceHub({ carId }: { carId: string }) {
   }, [carId]);
 
   return (
-    <div className="rounded-lg border bg-black/40 backdrop-blur p-4 shadow-lg shadow-purple-700/30">
+    <div className="midnite-card">
       <h2 className="font-semibold mb-4 text-white">Maintenance</h2>
       {loading ? (
-        <p className="text-neutral-400">Loading logs...</p>
+        <p className="text-neutral-400">Loading logs…</p>
       ) : logs.length === 0 ? (
         <p className="text-neutral-400">No maintenance logs yet.</p>
       ) : (

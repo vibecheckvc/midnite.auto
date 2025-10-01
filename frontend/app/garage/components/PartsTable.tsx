@@ -21,7 +21,7 @@ export function PartsTable({ carId }: { carId: string }) {
       setLoading(true);
 
       const { data, error } = await supabase
-        .from("car_parts")
+        .from("car_parts") // ✅ matches your table
         .select("*")
         .eq("car_id", carId);
 
@@ -36,9 +36,8 @@ export function PartsTable({ carId }: { carId: string }) {
 
     fetchParts();
 
-    // realtime updates
     const channel = supabase
-      .channel("car-parts")
+      .channel("car_parts_updates")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "car_parts", filter: `car_id=eq.${carId}` },
@@ -68,10 +67,10 @@ export function PartsTable({ carId }: { carId: string }) {
   }, [carId]);
 
   return (
-    <div className="rounded-lg border bg-black/40 backdrop-blur p-4 shadow-lg shadow-purple-700/30">
+    <div className="midnite-card overflow-x-auto">
       <h2 className="font-semibold mb-4 text-white">Parts</h2>
       {loading ? (
-        <p className="text-neutral-400">Loading parts...</p>
+        <p className="text-neutral-400">Loading parts…</p>
       ) : parts.length === 0 ? (
         <p className="text-neutral-400">No parts logged yet.</p>
       ) : (
@@ -92,9 +91,7 @@ export function PartsTable({ carId }: { carId: string }) {
                 <td className="py-2">
                   {part.cost ? `$${part.cost.toLocaleString()}` : "-"}
                 </td>
-                <td className="py-2">
-                  {part.installed ? "✅" : "⏳"}
-                </td>
+                <td className="py-2">{part.installed ? "✅" : "⏳"}</td>
               </tr>
             ))}
           </tbody>

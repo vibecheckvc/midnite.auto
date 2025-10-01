@@ -1,79 +1,40 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { FaBars, FaTimes } from 'react-icons/fa';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-const navItems = [
-  { name: 'Home', href: '/' },
-  { name: 'Events', href: '/events' },
-  { name: 'Crew', href: '/crew' },
-  { name: 'Marketplace', href: '/marketplace' },
-  { name: 'Garage', href: '/garage' },
-  { name: 'Profile', href: '/profile' },
+const navLinks = [
+  { href: "/", label: "Home" },
+  { href: "/events", label: "Events" },
+  { href: "/crew", label: "Crew" },
+  { href: "/marketplace", label: "Marketplace" },
+  { href: "/garage", label: "Garage" },
+  { href: "/profile", label: "Profile" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-black/70 backdrop-blur-xl border-b border-purple-600/20 shadow-lg">
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
-        {/* Logo */}
-        <Link
-          href="/"
-          className="text-2xl font-extrabold bg-gradient-to-r from-purple-400 via-fuchsia-500 to-red-500 bg-clip-text text-transparent"
-        >
-          Midnite
-        </Link>
-
-        {/* Desktop Nav */}
-        <div className="hidden md:flex items-center space-x-8">
-          {navItems.map((item) => (
+    <nav className="midnite-navbar fixed top-0 left-0 right-0 z-50 bg-black/80 border-b border-purple-900/40 backdrop-blur-md">
+      <div className="max-w-7xl mx-auto flex items-center justify-center py-4">
+        {/* 🔥 Centered nav menu */}
+        <div className="flex space-x-10">
+          {navLinks.map((link) => (
             <Link
-              key={item.href}
-              href={item.href}
-              className={`transition-all ${
-                pathname === item.href
-                  ? 'text-fuchsia-400 border-b-2 border-fuchsia-500 pb-1'
-                  : 'text-gray-300 hover:text-white'
+              key={link.href}
+              href={link.href}
+              className={`text-sm font-semibold uppercase tracking-wide transition-colors ${
+                pathname === link.href
+                  ? "text-white border-b-2 border-purple-500"
+                  : "text-gray-400 hover:text-purple-300"
               }`}
             >
-              {item.name}
+              {link.label}
             </Link>
           ))}
         </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden text-gray-300"
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          {menuOpen ? <FaTimes size={22} /> : <FaBars size={22} />}
-        </button>
       </div>
-
-      {/* Mobile Nav */}
-      {menuOpen && (
-        <div className="md:hidden bg-black/90 border-t border-purple-600/20 px-6 py-4 space-y-4">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`block transition-all ${
-                pathname === item.href
-                  ? 'text-fuchsia-400'
-                  : 'text-gray-300 hover:text-white'
-              }`}
-              onClick={() => setMenuOpen(false)}
-            >
-              {item.name}
-            </Link>
-          ))}
-        </div>
-      )}
     </nav>
   );
 }

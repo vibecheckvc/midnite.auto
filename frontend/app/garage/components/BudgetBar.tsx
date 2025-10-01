@@ -22,7 +22,7 @@ export function BudgetBar({ userId }: { userId: string }) {
         .from("budgets")
         .select("*")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle(); // ✅ safer than .single()
 
       if (error) {
         console.error("Error fetching budget:", error.message);
@@ -35,15 +35,13 @@ export function BudgetBar({ userId }: { userId: string }) {
 
     fetchBudget();
 
-    // realtime updates
     const channel = supabase
-      .channel("budget-updates")
+      .channel("budget_updates")
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "budgets", filter: `user_id=eq.${userId}` },
+        { event: "*", schema: "public", table: "budgets", filter: `user_id=eq.${userId}` },
         (payload) => {
-          const updated = payload.new as Budget;
-          setBudget(updated);
+          setBudget(payload.new as Budget);
         }
       )
       .subscribe();
@@ -55,16 +53,16 @@ export function BudgetBar({ userId }: { userId: string }) {
 
   if (loading) {
     return (
-      <div className="rounded-lg border bg-black/40 backdrop-blur p-4">
+      <div className="midnite-card">
         <h2 className="font-semibold mb-3 text-white">Budget</h2>
-        <p className="text-neutral-400">Loading...</p>
+        <p className="text-neutral-400">Loading…</p>
       </div>
     );
   }
 
   if (!budget) {
     return (
-      <div className="rounded-lg border bg-black/40 backdrop-blur p-4">
+      <div className="midnite-card">
         <h2 className="font-semibold mb-3 text-white">Budget</h2>
         <p className="text-neutral-400">No budget set yet.</p>
       </div>
@@ -74,7 +72,7 @@ export function BudgetBar({ userId }: { userId: string }) {
   const percent = Math.min((budget.spent / budget.planned) * 100, 100);
 
   return (
-    <div className="rounded-lg border bg-black/40 backdrop-blur p-4 shadow-lg shadow-purple-700/30">
+    <div className="midnite-card">
       <h2 className="font-semibold mb-3 text-white">Budget</h2>
       <div className="h-4 w-full bg-neutral-800 rounded overflow-hidden">
         <div
