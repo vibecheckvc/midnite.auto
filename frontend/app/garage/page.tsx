@@ -5,9 +5,9 @@ import { supabase } from "@/utils/supabaseClient";
 
 import { GarageHeader } from "./components/GarageHeader";
 import { CarGrid } from "./components/CarGrid";
-import { AddCarModal } from "./components/AddCarModal";
+import AddCarModal from "./components/AddCarModal";
 import { SpecCard } from "./components/SpecCard";
-import { MaintenanceHub } from "./components/MaintenanceHub";
+import MaintenanceHub from "./components/MaintenanceHub";
 import { MaintenanceWidget } from "./components/MaintenanceWidget";
 import { PartsTable } from "./components/PartsTable";
 import { TaskBoard } from "./components/TaskBoard";
@@ -16,10 +16,28 @@ import { BuildTimeline } from "./components/BuildTimeline";
 import ActivityFeed from "./components/ActivityFeed";
 import { PhotoCarousel } from "./components/PhotoCarousel";
 
+// Types
+type MaintenanceLog = {
+  id: string;
+  car_id: string;
+  user_id: string;
+  type: string;
+  mileage: number | null;
+  due_date: string | null;
+  notes: string | null;
+  interval_miles: number | null;
+  last_done_miles: number | null;
+  current_miles: number | null;
+  status?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
 export default function GaragePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [carId, setCarId] = useState<string | null>(null);
   const [addCarOpen, setAddCarOpen] = useState(false);
+  const [logs, setLogs] = useState<MaintenanceLog[]>([]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -30,14 +48,26 @@ export default function GaragePage() {
       if (user) {
         setUserId(user.id);
 
-        const { data } = await supabase
+        // Fetch first car
+        const { data: car } = await supabase
           .from("cars")
           .select("id")
           .eq("user_id", user.id)
           .limit(1)
           .single();
 
-        if (data) setCarId(data.id);
+        if (car) {
+          setCarId(car.id);
+
+          // ✅ Fetch logs for this car
+          const { data: logsData } = await supabase
+            .from("maintenance")
+            .select("*")
+            .eq("car_id", car.id)
+            .order("due_date", { ascending: true });
+
+          if (logsData) setLogs(logsData);
+        }
       }
     };
 
@@ -116,13 +146,19 @@ export default function GaragePage() {
         </section>
       )}
 
-      {/* Maintenance Widget (compact overview) */}
+      {/* Maintenance Logs */}
       {carId && (
         <section>
           <h2 className="text-xl font-semibold text-white mb-4">
             Maintenance Status
           </h2>
-          <MaintenanceWidget carId={carId} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {logs.length > 0 ? (
+              logs.map((log) => <MaintenanceWidget key={log.id} log={log} />)
+            ) : (
+              <p className="text-neutral-500 text-sm">No logs yet.</p>
+            )}
+          </div>
         </section>
       )}
 
