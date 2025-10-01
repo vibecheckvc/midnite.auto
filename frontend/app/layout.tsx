@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "../components/Navbar";
-import Providers from "./providers"; // ✅ wraps TanStack Query + future global contexts
+import Providers from "./providers";
+import AuthHashHandler from "./authhandler";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,15 +48,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[--color-midnite-bg] text-[--color-midnite-text] min-h-screen flex flex-col`}
       >
         <Providers>
-          {/* 🚦 Global Navbar */}
+          <AuthHashHandler />
           <Navbar />
 
-          {/* 💻 App container */}
           <main className="flex-1 pt-20 px-4 md:px-8 max-w-7xl w-full mx-auto">
             {children}
           </main>
 
-          {/* 🌑 Global footer (optional for investor demo) */}
           <footer className="border-t border-white/10 py-6 text-center text-sm text-neutral-500">
             © {new Date().getFullYear()} Midnite.auto — Built for the underground
           </footer>
