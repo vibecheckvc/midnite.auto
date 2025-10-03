@@ -19,10 +19,10 @@ const Hero = () => {
         {/* Left Side: Text */}
         <div className="flex items-center justify-center lg:justify-start px-6 lg:px-20">
           <div className="text-center lg:text-left">
-            <h1 className="double text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-6 leading-tight">
+            <h1 className="double text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-6 leading-tight">
               The 24/7 Car Meet
             </h1>
-            <p className="text-lg md:text-xl text-slate-900 mb-8 leading-relaxed">
+            <p className="text-lg md:text-xl text-white mb-8 leading-relaxed">
               Instagram but for car enthusiasts, the ultimate social network for
               car enthusiasts. Showcase your builds, discover epic events, and
               connect with a global community of racers.
